@@ -1,85 +1,23 @@
-import requests
-import csv
-from datetime import datetime
 import time
+from datetime import datetime
+from github_utils import (
+    calculate_age_in_days,
+    format_age,
+    calculate_days_since_push,
+    calculate_closed_issues_ratio,
+    fetch_repositories,
+    export_to_csv,
+)
 
-
-# Configuração da API do GitHub
-GITHUB_API_URL = "https://api.github.com/graphql"
 GITHUB_TOKEN = "seu_token_aqui"
-
-# Query GraphQL repos mais poupulares
-GRAPHQL_QUERY = """
-query ($cursor: String, $pageSize: Int!) {
-  search(query: "stars:>1", type: REPOSITORY, first: $pageSize, after: $cursor) {
-    repositoryCount
-    pageInfo {
-      endCursor
-      hasNextPage
-    }
-    edges {
-      node {
-        ... on Repository {
-          name
-          owner {
-            login
-          }
-          createdAt
-          stargazerCount
-          pullRequests(states: MERGED) {
-            totalCount
-          }
-          releases {
-            totalCount
-          }
-        }
-      }
-    }
-  }
-}
-"""
-
-
-def calculate_age_in_days(created_at):
-    created_date = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ")
-    current_date = datetime.now()
-    age = (current_date - created_date).days
-    return age
-
-
-def format_age(days):
-    years = days // 365
-    remaining_days = days % 365
-    if years > 0:
-        return f"{years} anos e {remaining_days} dias"
-    return f"{days} dias"
-
-
-def fetch_repositories(cursor=None, page_size=10):
-    headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Content-Type": "application/json",
-    }
-
-    variables = {"cursor": cursor, "pageSize": page_size}
-
-    payload = {"query": GRAPHQL_QUERY, "variables": variables}
-
-    try:
-        response = requests.post(GITHUB_API_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Erro na requisição: {e}")
-        return None
 
 
 def display_repository_data(repos, start_index):
-    print("\n" + "=" * 100)
+    print("\n" + "=" * 130)
     print(
-        f"{'#':<5} {'Repositório':<40} {'Idade':<25} {'PRs Aceitas':<15} {'Releases':<10}"
+        f"{'#':<5} {'Repositório':<35} {'Linguagem':<12} {'Idade':<20} {'PRs':<8} {'Releases':<10} {'Issues %':<10}"
     )
-    print("=" * 100)
+    print("=" * 130)
 
     for i, repo in enumerate(repos, start=start_index + 1):
         node = repo["node"]
@@ -88,17 +26,21 @@ def display_repository_data(repos, start_index):
         age_formatted = format_age(age_days)
         pr_count = node["pullRequests"]["totalCount"]
         release_count = node["releases"]["totalCount"]
-        stars = node["stargazerCount"]
+        language = node["primaryLanguage"]["name"] if node["primaryLanguage"] else "N/A"
+        total_issues = node["issues"]["totalCount"]
+        closed_issues = node["closedIssues"]["totalCount"]
+        issues_ratio = calculate_closed_issues_ratio(closed_issues, total_issues)
 
-        # Para nomes muito longos
-        if len(name) > 38:
-            name = name[:35] + "..."
+        if len(name) > 33:
+            name = name[:30] + "..."
+        if len(language) > 10:
+            language = language[:10]
 
         print(
-            f"{i:<5} {name:<40} {age_formatted:<25} {pr_count:<15} {release_count:<10}"
+            f"{i:<5} {name:<35} {language:<12} {age_formatted:<20} {pr_count:<8} {release_count:<10} {issues_ratio:<9.1f}%"
         )
 
-    print("=" * 100)
+    print("=" * 130)
 
 
 def collect_statistics(all_repos):
@@ -108,31 +50,104 @@ def collect_statistics(all_repos):
     ages = [calculate_age_in_days(repo["node"]["createdAt"]) for repo in all_repos]
     pr_counts = [repo["node"]["pullRequests"]["totalCount"] for repo in all_repos]
     release_counts = [repo["node"]["releases"]["totalCount"] for repo in all_repos]
+    days_since_push = [
+        calculate_days_since_push(repo["node"]["pushedAt"]) for repo in all_repos
+    ]
+
+    issues_ratios = []
+    for repo in all_repos:
+        node = repo["node"]
+        total = node["issues"]["totalCount"]
+        closed = node["closedIssues"]["totalCount"]
+        issues_ratios.append(calculate_closed_issues_ratio(closed, total))
 
     print("\n" + "=" * 100)
-    print("ESTATÍSTICAS GERAIS")
+    print("ESTATÍSTICAS GERAIS - ANÁLISE DOS 1000 REPOSITÓRIOS MAIS POPULARES")
     print("=" * 100)
 
-    print("\nRQ01 - Idade dos Repositórios:")
+    print("\nRQ01 - Sistemas populares são maduros/antigos?")
     print(f"  Idade Média: {format_age(sum(ages) // len(ages))}")
+    print(f"  Idade Mediana: {format_age(sorted(ages)[len(ages)//2])}")
     print(f"  Idade Mínima: {format_age(min(ages))}")
     print(f"  Idade Máxima: {format_age(max(ages))}")
 
-    print("\nRQ02 - Pull Requests Aceitas:")
-    print(f"  Média de PRs: {sum(pr_counts) // len(pr_counts)}")
+    print("\nRQ02 - Sistemas populares recebem muita contribuição externa?")
+    print(f"  Média de PRs Aceitas: {sum(pr_counts) // len(pr_counts)}")
+    print(f"  Mediana de PRs: {sorted(pr_counts)[len(pr_counts)//2]}")
     print(f"  Mínimo de PRs: {min(pr_counts)}")
     print(f"  Máximo de PRs: {max(pr_counts)}")
 
-    print("\nRQ03 - Releases:")
+    print("\nRQ03 - Sistemas populares lançam releases com frequência?")
     print(f"  Média de Releases: {sum(release_counts) // len(release_counts)}")
+    print(f"  Mediana de Releases: {sorted(release_counts)[len(release_counts)//2]}")
     print(f"  Mínimo de Releases: {min(release_counts)}")
     print(f"  Máximo de Releases: {max(release_counts)}")
+
+    print("\nRQ04 - Sistemas populares são atualizados com frequência?")
+    print(
+        f"  Média de dias desde último push: {sum(days_since_push) // len(days_since_push)}"
+    )
+    print(f"  Mediana: {sorted(days_since_push)[len(days_since_push)//2]} dias")
+    print(f"  Mínimo: {min(days_since_push)} dias")
+    print(f"  Máximo: {max(days_since_push)} dias")
+
+    print("\nRQ05 - Sistemas populares são escritos nas linguagens mais populares?")
+    language_count = {}
+    for repo in all_repos:
+        lang = repo["node"]["primaryLanguage"]
+        lang_name = lang["name"] if lang else "N/A"
+        language_count[lang_name] = language_count.get(lang_name, 0) + 1
+
+    sorted_languages = sorted(language_count.items(), key=lambda x: x[1], reverse=True)
+    print(f"  Top 10 Linguagens:")
+    for lang, count in sorted_languages[:10]:
+        percentage = (count / len(all_repos)) * 100
+        print(f"    {lang}: {count} repositórios ({percentage:.1f}%)")
+
+    print("\nRQ06 - Sistemas populares possuem alto percentual de issues fechadas?")
+    avg_ratio = sum(issues_ratios) / len(issues_ratios)
+    print(f"  Média de Issues Fechadas: {avg_ratio:.2f}%")
+    print(f"  Mediana: {sorted(issues_ratios)[len(issues_ratios)//2]:.2f}%")
+    print(f"  Mínimo: {min(issues_ratios):.2f}%")
+    print(f"  Máximo: {max(issues_ratios):.2f}%")
+
+    print("\n" + "=" * 100)
+    print("RQ07 - Análise por Linguagem (Top 5)")
+    print("=" * 100)
+
+    for lang, count in sorted_languages[:5]:
+        repos_lang = [
+            r
+            for r in all_repos
+            if (
+                r["node"]["primaryLanguage"]
+                and r["node"]["primaryLanguage"]["name"] == lang
+            )
+            or (not r["node"]["primaryLanguage"] and lang == "N/A")
+        ]
+
+        if repos_lang:
+            prs = [r["node"]["pullRequests"]["totalCount"] for r in repos_lang]
+            releases = [r["node"]["releases"]["totalCount"] for r in repos_lang]
+            pushes = [
+                calculate_days_since_push(r["node"]["pushedAt"]) for r in repos_lang
+            ]
+
+            print(f"\n{lang} ({count} repositórios):")
+            print(
+                f"  Média PRs: {sum(prs) // len(prs)} | Mediana: {sorted(prs)[len(prs)//2]}"
+            )
+            print(
+                f"  Média Releases: {sum(releases) // len(releases)} | Mediana: {sorted(releases)[len(releases)//2]}"
+            )
+            print(
+                f"  Média dias desde último push: {sum(pushes) // len(pushes)} | Mediana: {sorted(pushes)[len(pushes)//2]}"
+            )
 
     print("=" * 100)
 
 
 def main():
-    """Função principal"""
     print("=" * 100)
     print("ANÁLISE DE REPOSITÓRIOS POPULARES DO GITHUB")
     print("Coletando dados dos repositórios com mais estrelas")
@@ -149,7 +164,7 @@ def main():
     cursor = None
     page_size = 10
     total_fetched = 0
-    max_repos = 100
+    max_repos = 1000
 
     print(
         f"\nBuscando {max_repos} repositórios com paginação de {page_size} itens...\n"
@@ -158,7 +173,7 @@ def main():
     while total_fetched < max_repos:
         print(f"Buscando página {(total_fetched // page_size) + 1}...")
 
-        data = fetch_repositories(cursor, page_size)
+        data = fetch_repositories(GITHUB_TOKEN, cursor, page_size)
 
         if not data or "data" not in data:
             print("Erro ao buscar dados ou limite de requisições atingido")
@@ -189,8 +204,7 @@ def main():
         cursor = page_info["endCursor"]
 
         # rate limit da API
-        print("\nAguardando 2 segundos antes da próxima requisição...")
-        time.sleep(2)
+        time.sleep(1)
 
     print(f"\n  Total de repositórios coletados: {len(all_repos)}")
 
@@ -202,37 +216,10 @@ def main():
         save = input("Deseja salvar os dados em CSV? (s/n): ")
         if save.lower() == "s":
             filename = f"github_repos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-            with open(filename, "w", encoding="utf-8", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(
-                    [
-                        "Repositório",
-                        "Owner",
-                        "Nome",
-                        "Estrelas",
-                        "Data Criação",
-                        "Idade (dias)",
-                        "PRs Aceitas",
-                        "Releases",
-                    ]
-                )
-                for repo in all_repos:
-                    node = repo["node"]
-                    full_name = f"{node['owner']['login']}/{node['name']}"
-                    age_days = calculate_age_in_days(node["createdAt"])
-                    writer.writerow(
-                        [
-                            full_name,
-                            node["owner"]["login"],
-                            node["name"],
-                            node["stargazerCount"],
-                            node["createdAt"],
-                            age_days,
-                            node["pullRequests"]["totalCount"],
-                            node["releases"]["totalCount"],
-                        ]
-                    )
-            print(f"  Dados salvos em: {filename}")
+            if export_to_csv(all_repos, filename):
+                print(f"  Dados salvos em: {filename}")
+            else:
+                print("  Erro ao salvar dados no CSV")
 
 
 if __name__ == "__main__":
