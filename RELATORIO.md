@@ -395,8 +395,11 @@ Considerando nossos resultados, é facil concluir que nossa hipotese foi confirm
 **Resultado Observado**:
 
 Há similaridades entre:
+
 Python/Javascrypt -> Similares nos tempos para push, media/mediana de releases e media/mediana de PRs (também nesse com o GO)
+
 Typescrypt/Go -> Similares nos tempos para push, media/mediana de releases.
+
 Documentação é outlier, uma vez que tem tempos longos para push, quase nunca tem release e possuem baixas PRs
 
 ### Gráficos Comparativos
