@@ -436,6 +436,17 @@ A análise dos 1.000 repositórios mais estrelados do GitHub revelou um conjunto
 
 **Linguagens de Programação**
 
+A distribuição por linguagens mostra predominância de: 
+
+| Linguagem | % dos repositórios |
+|---|---|
+| Python | 20% |
+|TypeScript|16%|
+|JavaScript|11,5%|
+|Go|7,7%|
+|Diversos|44,8%|
+
+Observou-se ainda que repositórios categorizados como documentação (N/A) compõem uma fração relevante e têm comportamento diferente dos outros, apresentando poucas releases e maior inatividade. A observação dos objetivos almejados pelo repositório deve ser levada em consideração quando se está fazenod uma análise estatística.
 
 
 ### 5.1 Tomada de Decisão
