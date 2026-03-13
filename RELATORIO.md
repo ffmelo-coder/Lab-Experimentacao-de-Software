@@ -430,7 +430,13 @@ Documentação é outlier, uma vez que tem tempos longos para push, quase nunca 
 
 ## 5. Conclusão
 
-A análise dos 1.000 repositórios mais estrelados do GitHub revelou um conjunto consistente de características que permitem responder às questões de pesquisa propostas e validar a maioria das hipóteses iniciais. Em termos de maturidade, os repositórios são, em média, antigos: a mediana de idade é de 3.062 dias (~8,4 anos), o que confirma que projetos populares tendem a acumular reputação ao longo de vários anos.
+**Resumo**
+
+A análise dos 1.000 repositórios mais estrelados do GitHub revelou um conjunto consistente de características que permitem responder às questões de pesquisa propostas e validar a maioria das hipóteses iniciais. Em termos de maturidade, os repositórios são, em média, antigos: a mediana de idade é de 3.062 dias (por volta de 8,4 anos), o que confirma que projetos populares tendem a acumular reputação ao longo de vários anos. Quanto à contribuição externa, observou-se uma mediana de 741 pull requests aceitos por repositório, indicando um nível elevado de colaboração comunitária. Os repositórios também apresentam versionamento significativo: a mediana de releases é 41, acima do valor de comparação de 20 releases. Em relação à manutenção e atividade de desenvolvimento, os projetos são atualizados com muita frequência. A mediana de dias desde o último push é 1 dia, o que confirma uma base de código amplamente ativa.
+
+**Linguagens de Programação**
+
+
 
 ### 5.1 Tomada de Decisão
 
