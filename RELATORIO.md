@@ -497,11 +497,3 @@ Por fim, os resultados devem ser interpretados com cautela devido a limitações
 - Aumentar o número de repositórios coletados, gerando uma amostra mais precisa e significativa.
 
 - Utilizar métrica parametrizável ao invés de apenas por número de estrelas. Gerando dados com diversos parâmetros.
-
-
-
-
-
-
-
-
