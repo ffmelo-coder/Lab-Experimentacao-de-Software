@@ -33,6 +33,13 @@ sys.path.insert(0, script_dir)
 # Token do GitHub
 GITHUB_TOKEN = "seu_token_aqui"
 
+# Caminho para o JAR do CK
+_ck_jar = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "ck",
+    "ck-0.7.1-SNAPSHOT-jar-with-dependencies.jar",
+)
+CK_CMD = f'java -jar "{_ck_jar}" {{repo_dir}} true 0 false {{out_dir}}'
 
 from github_utils import (
     fetch_repositories,
@@ -40,7 +47,36 @@ from github_utils import (
     calculate_age_in_days,
     calculate_days_since_push,
     calculate_closed_issues_ratio,
+    format_age,
+    run_git_clone,
+    run_cloc,
+    count_java_loc,
+    run_ck_for_repo,
+    write_list_csv,
+    write_results_csv,
 )
+
+
+def display_repository_data(repos, start_index):
+    print("\n" + "=" * 85)
+    print(
+        f"{'#':<5} {'Repositório':<40} {'Estrelas':<12} {'Idade':<20} {'Releases':<8}"
+    )
+    print("=" * 85)
+
+    for i, repo in enumerate(repos, start=start_index + 1):
+        node = repo["node"]
+        name = f"{node['owner']['login']}/{node['name']}"
+        stars = node.get("stargazerCount", 0)
+        age_formatted = format_age(calculate_age_in_days(node["createdAt"]))
+        releases = node["releases"]["totalCount"]
+
+        if len(name) > 38:
+            name = name[:35] + "..."
+
+        print(f"{i:<5} {name:<40} {stars:<12} {age_formatted:<20} {releases:<8}")
+
+    print("=" * 85)
 
 def write_results_csv(rows, filename):
     header = [
