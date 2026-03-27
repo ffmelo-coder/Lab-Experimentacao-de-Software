@@ -344,14 +344,14 @@ def parse_ck_output(out_dir):
 
                         result = {}
                         if cbo_list:
-                            result["cbo_mean"] = statistics.mean(cbo_list)
-                            result["cbo_median"] = statistics.median(cbo_list)
+                            result["cbo_mean"] = round(statistics.mean(cbo_list), 4)
+                            result["cbo_median"] = round(statistics.median(cbo_list), 4)
                         if dit_list:
-                            result["dit_mean"] = statistics.mean(dit_list)
-                            result["dit_median"] = statistics.median(dit_list)
+                            result["dit_mean"] = round(statistics.mean(dit_list), 4)
+                            result["dit_median"] = round(statistics.median(dit_list), 4)
                         if lcom_list:
-                            result["lcom_mean"] = statistics.mean(lcom_list)
-                            result["lcom_median"] = statistics.median(lcom_list)
+                            result["lcom_mean"] = round(statistics.mean(lcom_list), 4)
+                            result["lcom_median"] = round(statistics.median(lcom_list), 4)
                         return result
                 except Exception:
                     continue
@@ -388,14 +388,14 @@ def parse_ck_output(out_dir):
 
                         result = {}
                         if cbo_list:
-                            result["cbo_mean"] = statistics.mean(cbo_list)
-                            result["cbo_median"] = statistics.median(cbo_list)
+                            result["cbo_mean"] = round(statistics.mean(cbo_list), 4)
+                            result["cbo_median"] = round(statistics.median(cbo_list), 4)
                         if dit_list:
-                            result["dit_mean"] = statistics.mean(dit_list)
-                            result["dit_median"] = statistics.median(dit_list)
+                            result["dit_mean"] = round(statistics.mean(dit_list), 4)
+                            result["dit_median"] = round(statistics.median(dit_list), 4)
                         if lcom_list:
-                            result["lcom_mean"] = statistics.mean(lcom_list)
-                            result["lcom_median"] = statistics.median(lcom_list)
+                            result["lcom_mean"] = round(statistics.mean(lcom_list), 4)
+                            result["lcom_median"] = round(statistics.median(lcom_list), 4)
                         return result
                 except Exception:
                     continue
