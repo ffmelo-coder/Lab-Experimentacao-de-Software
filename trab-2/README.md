@@ -1,4 +1,4 @@
-# Estudo de Qualidade de Repositórios Java (baseado em `trab-1`)
+# Estudo de Qualidade de Repositórios Java
 
 Este diretório contém uma adaptação do coletor do trabalho anterior para focar em repositórios escritos em Java e preparar a extração de métricas de produto (CBO, DIT, LCOM) via ferramenta CK.
 
