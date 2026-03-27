@@ -1,19 +1,38 @@
 #!/usr/bin/env python3
 import os
 import sys
-import argparse
-import subprocess
-import json
-import csv
-import time
+import stat
 import shutil
-import statistics
-import tempfile
+import argparse
+import time
 
-GITHUB_TOKEN = "seu_token_aqui"
+def _remove_readonly(func, path, _exc):
+    try:
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+    except Exception:
+        pass
+
+
+def remove_dir(path):
+    if not os.path.exists(path):
+        return
+    import subprocess
+
+    result = subprocess.run(
+        ["cmd", "/c", "rd", "/s", "/q", os.path.abspath(path)], capture_output=True
+    )
+    if result.returncode != 0 or os.path.exists(path):
+        # aguarda 2s e tenta shutil
+        time.sleep(2)
+        shutil.rmtree(path, onexc=_remove_readonly)
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_dir)
+
+# Token do GitHub
+GITHUB_TOKEN = "seu_token_aqui"
+
 
 from github_utils import (
     fetch_repositories,
