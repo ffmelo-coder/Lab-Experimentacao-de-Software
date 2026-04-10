@@ -82,6 +82,169 @@ GITHUB_TOKEN = "seu_token_aqui"
 
 ## Como Usar
 
+### Interface Gráfica (GUI)
+
+```bash
+pip install matplotlib
+python collect_java_gui.py
+```
+
+> **Dependências adicionais:** `matplotlib` e `numpy` para os gráficos.
+
+---
+
+#### Visão Geral da Interface
+
+![alt text](imgs/gui_principal.png)
+
+A janela principal é dividida em quatro áreas:
+
+1. **Barra de Token** — campo para o GitHub Token (mascarado) e botões de controle
+2. **Barra de Opções** — configurações de coleta
+3. **Barra de Progresso** — acompanhamento em tempo real e ações pós-coleta
+4. **Tabela de Repositórios** — exibição paginada dos dados coletados
+
+---
+
+#### Campos e Botões
+
+**Barra de Token**
+
+| Elemento         | Descrição                                                                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub Token     | Cole aqui seu token pessoal do GitHub (`ghp_...`). O campo é mascarado. O botão **▶ Iniciar Coleta** só é habilitado após preenchimento. |
+| ▶ Iniciar Coleta | Valida o token e inicia a coleta em background.                                                                                          |
+| ⏹ Parar          | Sinaliza a thread para encerrar após a operação em andamento terminar. Os dados já coletados são preservados.                            |
+
+**Barra de Opções**
+
+| Campo          | Descrição                                                                                                             |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Máx. repos     | Quantidade máxima de repositórios a coletar (padrão: 1000).                                                           |
+| Modo           | `completo` — clona e mede LOC/CK. `sem_clone` — apenas dados da API. `apenas_listar` — lista simples sem métricas CK. |
+| Workers        | Número de threads paralelas para clone + CK (recomendado: 4).                                                         |
+| CK timeout (s) | Tempo máximo para o CK processar um repositório antes de ser ignorado (padrão: 120s).                                 |
+| Dir repos      | Pasta onde os clones temporários são armazenados durante a coleta (removidos após cada repo).                         |
+
+**Barra de Progresso**
+
+| Botão           | Descrição                                                                                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 📂 Importar CSV | Carrega um CSV gerado anteriormente diretamente na tabela, sem precisar rodar nova coleta. Útil para análise e geração de gráficos. |
+| 💾 Exportar CSV | Salva os dados exibidos na tabela (ou filtrados) em um arquivo CSV.                                                                 |
+| 📊 Ver Gráficos | Abre a janela de gráficos das quatro questões de pesquisa. Habilitado após dados disponíveis.                                       |
+| 🔍 Filtros      | Exibe/oculta o painel de filtros avançados.                                                                                         |
+
+---
+
+#### Tabela de Repositórios
+
+![alt text](imgs/tabela_dados.png)
+
+Exibe os repositórios em páginas de 20 linhas. Clique em qualquer cabeçalho de coluna para ordenar.
+
+| Coluna       | Descrição                               |
+| ------------ | --------------------------------------- |
+| #            | Posição na coleta (rank por estrelas)   |
+| Repositório  | `owner/nome` do repositório             |
+| Estrelas     | Número de estrelas (popularidade)       |
+| Idade (dias) | Dias desde a criação do repositório     |
+| PRs          | Total de pull requests aceitos (merged) |
+| Releases     | Total de releases publicadas            |
+| Issues %     | Percentual de issues fechadas           |
+| Dias Push    | Dias desde o último push                |
+| LOC Java     | Linhas de código Java (tamanho)         |
+| CBO Méd.     | Média de CBO entre todas as classes     |
+| DIT Méd.     | Média de DIT entre todas as classes     |
+| LCOM Méd.    | Média de LCOM entre todas as classes    |
+
+Colunas de métricas CK (`LOC Java`, `CBO`, `DIT`, `LCOM`) aparecem como `—` quando a coleta foi feita no modo `sem_clone` ou quando o CK falhou/deu timeout naquele repositório.
+
+---
+
+#### Filtros Avançados
+
+![alt text](imgs/filtros.png)
+
+Todos os campos são opcionais e podem ser combinados. Ao clicar em **✔ Aplicar**, a tabela exibe apenas os repositórios que satisfazem todos os critérios. **✖ Limpar** remove todos os filtros ativos.
+
+---
+
+#### Janela de Gráficos
+
+![alt text](imgs/janela_grafo.png)
+
+Acessada pelo botão **📊 Ver Gráficos**. Organizada em abas:
+
+| Aba          | Conteúdo                                                                     |
+| ------------ | ---------------------------------------------------------------------------- |
+| RQ01 Média   | Popularidade (estrelas) × CBO / DIT / LCOM — usando médias por repositório   |
+| RQ01 Mediana | Popularidade (estrelas) × CBO / DIT / LCOM — usando medianas por repositório |
+| RQ02 Média   | Maturidade (idade em anos) × CBO / DIT / LCOM — médias                       |
+| RQ02 Mediana | Maturidade (idade em anos) × CBO / DIT / LCOM — medianas                     |
+| RQ03 Média   | Atividade (releases) × CBO / DIT / LCOM — médias                             |
+| RQ03 Mediana | Atividade (releases) × CBO / DIT / LCOM — medianas                           |
+| RQ04 Média   | Tamanho (LOC + comentários) × CBO / DIT / LCOM — médias                      |
+| RQ04 Mediana | Tamanho (LOC + comentários) × CBO / DIT / LCOM — medianas                    |
+| Resumo       | Estatísticas descritivas e tabela de correlação de Pearson cruzada           |
+
+---
+
+#### Entendendo os Gráficos de Dispersão
+
+![alt text](imgs/rq4_media.png)
+
+Cada gráfico de dispersão mostra a relação entre uma **métrica de processo** (eixo X) e uma **métrica de qualidade** (eixo Y). Cada ponto representa um repositório.
+
+**Elementos visuais:**
+
+- **Pontos coloridos** — cada ponto é um repositório
+- **Linha tracejada vermelha** — linha de regressão linear (tendência geral)
+- **`r = +0.274`** — coeficiente de correlação de Pearson (detalhado abaixo)
+- **`n = 971`** — número de repositórios com dados válidos para aquele par de métricas (pode ser menor que 1000 se houve falhas de clone ou timeout do CK)
+
+**Abas Média vs. Mediana:**
+
+Cada RQ tem duas abas — uma com a **média** e outra com a **mediana** das métricas CK por repositório. A comparação entre as duas serve para identificar **outliers**:
+
+- Se a linha de tendência das duas abas for similar → os outliers têm pouco impacto
+- Se as linhas divergirem bastante → outliers estão distorcendo a média (a mediana é mais confiável nesses casos)
+
+---
+
+#### Correlação de Pearson (r)
+
+O valor `r` exibido no título de cada gráfico é o **coeficiente de correlação de Pearson**, que mede o grau e a direção de uma relação linear entre duas variáveis. Seu valor varia sempre entre **-1** e **+1**:
+
+| Valor de \|r\| | Interpretação          |
+| -------------- | ---------------------- |
+| 0.00 – 0.19    | Correlação desprezível |
+| 0.20 – 0.39    | Correlação fraca       |
+| 0.40 – 0.59    | Correlação moderada    |
+| 0.60 – 0.79    | Correlação forte       |
+| 0.80 – 1.00    | Correlação muito forte |
+
+O **sinal** indica a direção:
+
+- **Positivo (+)** — quando X aumenta, Y tende a aumentar também
+- **Negativo (−)** — quando X aumenta, Y tende a diminuir
+
+> **Importante:** correlação não implica causalidade. Um `r` próximo de zero apenas indica ausência de relação _linear_ — pode existir uma relação não-linear não capturada pelo índice.
+
+---
+
+#### Aba Resumo
+
+![alt text](imgs/resumo.png)
+
+Contém duas tabelas:
+
+**Estatísticas Descritivas** — para cada métrica coletada, exibe: quantidade de repos com dado válido, valor mínimo, mediana, média e máximo.
+
+**Correlação de Pearson (processo × qualidade)** — tabela cruzada mostrando o `r` de cada métrica de processo (estrelas, idade, releases, LOC, comentários) contra cada métrica de qualidade (CBO, DIT, LCOM), com o `n` de cada par.
+
+---
+
 ### Interface CLI (Linha de Comando)
 
 ```bash
@@ -262,21 +425,6 @@ git config --global core.longpaths true
 - Java não está no PATH: verifique com `java -version`
 - Nenhum `.java` encontrado no repositório: sparse checkout sem arquivos
 - Versão do CK incompatível: o jar incluído é `0.7.1-SNAPSHOT`
-
-## Performance
-
-**Tempo estimado (1000 repositórios):**
-
-- Coleta GraphQL: ~17min (1000 requisições × 1s de delay)
-- Clone + CK por repo: 30s a 5min dependendo do tamanho
-- Total: várias horas para coleta completa
-
-**Uso de disco:**
-
-- Clones são temporários e removidos após cada repositório
-- Espaço máximo simultâneo: tamanho do maior repositório clonado
-
-**Dica:** Use `--max 10` para validar o pipeline antes de rodar os 1000.
 
 ## Limitações Conhecidas
 
